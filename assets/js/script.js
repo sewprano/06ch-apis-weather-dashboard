@@ -13,8 +13,21 @@ const history = [];
 
 function displayHistory() {
     let historyList = JSON.parse(localStorage.getItem('history'))
-    let 
-    
+    let listFrag = $(document.createDocumentFragment());
+
+    for (let i = historyList.length -1; i>= 0; i--) {
+        listFrag.append(displayHistoryButton (historyList[i]));
+    }
+
+    return listFrag;
+}
+
+function displayHistoryButton(buttonName) {
+    let buttonEl = $('<button').addClass(btn);
+    buttonEl.text(buttonName);
+    buttonEl.data('city', buttonName);
+
+    return buttonEl;
 }
 
 
