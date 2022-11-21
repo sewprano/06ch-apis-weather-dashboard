@@ -11,6 +11,7 @@ const historyEl = $('#history');
 
 const history = [];
 
+//Display History
 function displayHistory() {
     let historyList = JSON.parse(localStorage.getItem('history'))
     let listFrag = $(document.createDocumentFragment());
@@ -29,6 +30,12 @@ function displayHistoryButton(buttonName) {
 
     return buttonEl;
 }
+
+function displayWeather(cityName, weather, timezone) {
+    let date = day.js().tz(timezone).format('M/D/YYYY');
+}
+
+
 
 
 // Old code:
