@@ -23,17 +23,17 @@ function displayHistory() {
         historyList = JSON.parse(localStorage.getItem('search-history'));
     }
     let listFrag = $(document.createDocumentFragment());
-
-    console.log(historyList);
     for (let i = historyList.length -1; i>= 0; i--) {
-        listFrag.append(displayHistoryButton (historyList[i]));
+        const rowEl = $('<div>').addClass('row');
+        rowEl.append(displayHistoryButton (historyList[i]));
+        listFrag.append(rowEl);
     }
 
     return listFrag;
 }
 
 function displayHistoryButton(buttonName) {
-    let buttonEl = $('<button>').addClass("btn btn-light");
+    let buttonEl = $('<button>').addClass("btn btn-light m-2");
     buttonEl.text(buttonName);
     buttonEl.data('city', buttonName);
 
@@ -48,6 +48,13 @@ function citySearch(event) {
 
 function createWeatherCard(cityName, date, conditions, temp, humidity, windSpeed, uv, icon) {
     let uvColor;
+    if (uv <= 2) {
+        uvColor = 'low';
+    } else if (uv <= 5) {
+        uvColor = 'medium';
+    } else {
+        uvColor = 'high';
+    }
     const cardTemplate = `
     <div class="card-header bg-dark text-light">
         <h2>${cityName}</h2>
