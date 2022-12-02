@@ -6,12 +6,16 @@ const openWeatherApiKey = 'd91f911bcf2c0f925fb6535547a5ddc9' //using class repo 
 // DOM Elements
 const citySearchEl = $('#city-search');
 const cityInputEl = $('#input');
-const weatherEl = $('#weather');
+const weatherEl = $('#today');
 const forecastEl = $('#forecast');
 const historyEl = $('#history');
 const searchErrorEl = $('#error-msg')
 
 let historyList = [];
+
+//dayjs timezone plugins
+dayjs.extend(window.dayjs_plugin_utc);
+dayjs.extend(window.dayjs_plugin_timezone);
 
 //Display History
 function displayHistory() {
@@ -39,48 +43,76 @@ function displayHistoryButton(buttonName) {
 function citySearch(event) {
     event.preventDefault();
     fetchLatLon(cityInputEl.val());
-
+    cityInputEl.val('');
 }
 
-function createWeatherCard() {
+function createWeatherCard(cityName, date, conditions, temp, humidity, windSpeed, uv, icon) {
+    let uvColor;
+    const cardTemplate = `
+    <div class="card-header bg-dark text-light">
+        <h2>${cityName}</h2>
+        <h3>${conditions}<img src="${icon}" alt="${conditions} weather Icon" /></h3>
+        <h4>${date}</h4>
+    </div>
+    <div class="card-body">
+        <div>Temp: ${temp}&#8457;</div>
+        <div>Wind Speed: ${windSpeed} mph</div>
+        <div>Humidity: ${humidity}%</div>
+        <div class="${uvColor}">UV Index: ${uv}</div>
+    </div>`
 
+    weatherEl.html(cardTemplate);
 }
 
-function createForecastCard() {
-
+function createForecastCard(date, conditions, temp, humidity, windSpeed, icon) {
+     const cardTemplate = `
+     <div class="card">
+        <div class="card-header bg-dark text-light">
+        <h4 class="fs-5">${date}</h4>
+        <h5>${conditions}<img src="${icon}" alt="${conditions} weather Icon" /></h5>
+        </div>
+        <div class="card-body">
+            <div>Temp: ${temp}&#8457;</div>
+            <div>Wind Speed: ${windSpeed}</div>
+            <div>Humidity: ${humidity}%</div>
+        </div>
+    </div>
+     `
+     return cardTemplate;
 }
 
-function displayWeather(cityName, weather, timezone) {
-    let date = day.js().tz(timezone).format('M/D/YYYY');
+function displayWeather(cityName, current, timezone) {
+    const date = dayjs().tz(timezone).format('M/D/YYYY');
 
     //variables for fetch request
-    let temp = weather.temp;
-    let windSpeed = weather.wind_speed;
-    let humidity = weather.humidity;
-    let uv = weather.uvi;
-    let weatherIconUrl = `${openWeatherImageRootUrl}/${weather.weather[0].icon}.png`;
+    const temp = current.temp;
+    const windSpeed = current.wind_speed;
+    const humidity = current.humidity;
+    const uv = current.uvi;
+    const weatherIconUrl = `https://openweathermap.org/img/wn/${current.weather[0].icon}.png`;
 
-    //elements
-    let weatherIconEl = $('<img>').attr({src:weatherIconUrl, alt: weather.weather[0].main + 'weather Icon'});
-    let cityNameEl = $('<h2>').addClass(card-header);
-
+    createWeatherCard(cityName, date, current.weather[0].main, temp, humidity, windSpeed, uv, weatherIconUrl);
     
 }
 
-function displayForecast(cityName, weather, timezone) {
-    let date = day.js().tz(timezone).format('M/D/YYYY');
-
-    //create document fragment
-    let weatherFrag = $(document.createDocumentFragment());
-
-    
-
-    let weatherIconUrl = `${openWeatherImageRootUrl}/${weather.weather[0].icon}.png`;
-    let weatherIconEl = $('<img>').attr({src:weatherIconUrl, alt: weather.weather[0].main + 'weather Icon'});
+function displayForecast(forecast, timezone) {
+    const date = dayjs().tz(timezone).format('M/D/YYYY');
 
     //unix timestamps for forecast
-    let startDate = dayjs().tz(timezone).add(1, 'day').startOf('day').unix();
-    let endDate = dayjs().tz(timezone).add(6, 'day').startOf('day').unix();
+    const startDate = dayjs().tz(timezone).add(1, 'day').startOf('day').unix();
+    const endDate = dayjs().tz(timezone).add(6, 'day').startOf('day').unix();
+    const rowEl = $('<div>').addClass('row');
+    for (let i = 0; i < forecast.length; i++) {
+        if (forecast[i].dt >= startDate && forecast[i].dt < endDate) {
+            const colEl = $('<div>').addClass('col my-3');
+            const weatherIconUrl = `https://openweathermap.org/img/wn/${forecast[i].weather[0].icon}.png`;
+            const date = dayjs.unix(forecast[i].dt).tz(timezone).format('M/D/YYYY');
+            const card = createForecastCard(date, forecast[i].weather[0].main, forecast[i].temp.day, forecast[i].humidity, forecast[i].wind_speed, weatherIconUrl );
+            colEl.html(card);
+            rowEl.append(colEl);
+        }
+    }
+    forecastEl.html(rowEl);
 }
 
 async function fetchLatLon(searchTerm) {
@@ -98,6 +130,9 @@ async function fetchLatLon(searchTerm) {
             searchErrorEl.text(`${searchTerm} not found, please try again`);
         } else {
             historyList.push(data[0].name);
+            if(historyList.length > 10) {
+                historyList.shift();
+            }
             localStorage.setItem('search-history', JSON.stringify(historyList));
             historyEl.html(displayHistory());
             searchErrorEl.text('');
@@ -112,7 +147,7 @@ async function fetchLatLon(searchTerm) {
 async function fetchWeather(location) {
     const lat = location.lat;
     const lon = location.lon;
-    const fetchUrl = `${openWeatherApiRootUrl}/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&appid=${openWeatherApiKey}`;
+    const fetchUrl = `${openWeatherApiRootUrl}/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&units=imperial&appid=${openWeatherApiKey}`;
     
     try {
         const response = await fetch(fetchUrl);
@@ -121,7 +156,8 @@ async function fetchWeather(location) {
             return;
         }
         const data = await response.json();
-        console.log(data);
+        displayWeather(location.name, data.current, data.timezone);
+        displayForecast(data.daily, data.timezone);
 
     } catch (error) {
         console.error(error)
@@ -133,7 +169,10 @@ function init() {
 
 }
 
-citySearchEl.on("submit", citySearch);
+citySearchEl.on('submit', citySearch);
+historyEl.on('click', 'button', function(event){
+    fetchLatLon($(event.target).data('city'))
+});
 
  init();
 
