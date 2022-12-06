@@ -1,8 +1,7 @@
 // API
 const openWeatherApiRootUrl = 'https://api.openweathermap.org';
 // const openWeatherApiKey = '2d3415aa1f4826fcc57e3388eb7614e0'; 
-const openWeatherApiKey = 'd91f911bcf2c0f925fb6535547a5ddc9' //using class repo key until mine activated
-
+const openWeatherApiKey = '2d3415aa1f4826fcc57e3388eb7614e0' 
 // DOM Elements
 const citySearchEl = $('#city-search');
 const cityInputEl = $('#input');
@@ -154,7 +153,7 @@ async function fetchLatLon(searchTerm) {
 async function fetchWeather(location) {
     const lat = location.lat;
     const lon = location.lon;
-    const fetchUrl = `${openWeatherApiRootUrl}/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&units=imperial&appid=${openWeatherApiKey}`;
+    const fetchUrl = `${openWeatherApiRootUrl}/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&units=imperial&appid=${openWeatherApiKey}`;
     
     try {
         const response = await fetch(fetchUrl);
